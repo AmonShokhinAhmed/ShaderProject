@@ -1,0 +1,7 @@
+#include<string>
+
+#define VERSION_MAJOR @GraphicalApp_VERSION_MAJOR@
+#define VERSION_MINOR @GraphicalApp_VERSION_MINOR@
+#define PROJECT_NAME "@PROJECT_NAME@"
+#define FULL_APP_IDENTIFIER "@PROJECT_NAME@ @GraphicalApp_VERSION_MAJOR@.@GraphicalApp_VERSION_MINOR@"
+
