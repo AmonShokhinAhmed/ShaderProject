@@ -110,10 +110,9 @@ int main()
         if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
     
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);  
         // render
         // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
     
     
@@ -133,19 +132,15 @@ int main()
 
     // build and compile our shader program
     // ------------------------------------
-    Shader Shader("shader\\shader.vert", "shader\\shader.frag"); // you can name your shader files however you like
+    Shader Shader("shader\\shader.vert", "shader\\shader.frag", "shader\\shader.geom"); // you can name your shader files however you like
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
-        1.0f,  1.0f, 0.0f,  // top right
-        1.0f, -1.0f, 0.0f,  // bottom right
-        -1.0f, -1.0f, 0.0f,  // bottom left
-        -1.0f,  1.0f, 0.0f   // top left 
+        0.0f,  0.0f, 0.0f
     };
     unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
+        0
     }; 
 
     unsigned int VBO, VAO, EBO;
@@ -189,7 +184,7 @@ int main()
         zIndex%=(256*10);
         glBindVertexArray(VAO);
         glBindTexture(GL_TEXTURE_3D, texColorBuffer);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_POINTS, 1, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
