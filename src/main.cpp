@@ -16,7 +16,7 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 6.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -151,16 +151,15 @@ int main()
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
-        0.0f,  0.0f, 0.0f
-    };
-    unsigned int indices[] = {  // note that we start from 0!
-        0
+        0.0f,  0.0f, 0.0f,
+        0.25f,  5.0f, 0.0f,
+        0.5f,  -5.0f, 0.0f,
+        0.75f,  0.0f, 10.0f,
     }; 
 
-    unsigned int VBO, VAO, EBO;
+    unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
     // ..:: Initialization code :: ..
     // 1. bind Vertex Array Object
@@ -168,9 +167,6 @@ int main()
     // 2. copy our vertices array in a vertex buffer for OpenGL to use
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    // 3. copy our index array in a element buffer for OpenGL to use
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     // 4. then set the vertex attributes pointers
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0); 
@@ -211,12 +207,12 @@ int main()
         Shader.setMat4("model", model);
 
         Shader.setInt("screenTexture", 0);
-        Shader.setFloat("zIndex", (zIndex/10));
+        //Shader.setFloat("zIndex", (zIndex/10));
         ++zIndex;
         zIndex%=(256*10);
         glBindVertexArray(VAO);
         glBindTexture(GL_TEXTURE_3D, texColorBuffer);
-        glDrawElements(GL_POINTS, 1, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_POINTS, 0, 96*96*256 );
         glBindVertexArray(0);
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------

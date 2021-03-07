@@ -5,5 +5,10 @@ out vec2 TexCoords;
 
 void main()
 {
-    gl_Position = vec4(aPos, 1.0); 
+    int id = gl_VertexID;
+    int x = id/(96*256);
+    int y = (id%(96*256))/256;
+    int z = id%256;
+
+    gl_Position = vec4(x,y,z,1.0); 
 }  
