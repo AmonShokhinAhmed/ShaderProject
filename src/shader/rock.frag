@@ -16,7 +16,7 @@ void main()
         f+=1/length(fPos.xz-pillars[i])-1;
     }
     f-=1/length(fPos.xz)-1;
-    f=f-pow(length(fPos.xz),3);
+    f=f-length(fPos.xz)*3;
     vec2 helix = vec2(cos(fPos.y),sin(fPos.y));
     f+=dot(helix,fPos.xz);
 

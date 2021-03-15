@@ -204,6 +204,7 @@ int main()
 
         // calculate the model matrix for each object and pass it to shader before drawing
         glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+        model = glm::scale(model, glm::vec3(0.1f,0.1f,0.1f));
         Shader.setMat4("model", model);
 
         Shader.setInt("screenTexture", 0);
