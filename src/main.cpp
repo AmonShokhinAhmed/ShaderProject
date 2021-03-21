@@ -5,24 +5,26 @@
 #include "shader.h"
 #include "camera.h"
 
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 void processInput(GLFWwindow *window);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
+
+void generateRocks(float offset, unsigned int framebuffer, unsigned int VAORock, unsigned int texColorBuffer, Shader rockShader);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+unsigned int scr_width = 800;
+unsigned int scr_height = 600;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 6.0f));
-float lastX = SCR_WIDTH / 2.0f;
-float lastY = SCR_HEIGHT / 2.0f;
+Camera camera(glm::vec3(0.0f, -48.0f, 35.0f));
+float lastX = scr_width / 2.0f;
+float lastY = scr_height / 2.0f;
 bool firstMouse = true;
-
+bool wireframe = false;
+float offset = 0.0f;
 // timing
-float deltaTime = 0.0f;	// time between current frame and last frame
+float deltaTime = 0.0f; // time between current frame and last frame
 float lastFrame = 0.0f;
 
 int main()
@@ -40,7 +42,7 @@ int main()
 
     // glfw window creation
     // --------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(scr_width, scr_height, "LearnOpenGL", NULL, NULL);
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
@@ -60,7 +62,6 @@ int main()
         return -1;
     }
 
-
     //=================================================================
     //=================================================================
     //ROCK GENERATION:
@@ -74,15 +75,16 @@ int main()
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float verticesRock[] = {
-        1.0f,  1.0f, 0.0f,  // top right
-        1.0f, -1.0f, 0.0f,  // bottom right
-        -1.0f, -1.0f, 0.0f,  // bottom left
-        -1.0f,  1.0f, 0.0f   // top left 
+        1.0f, 1.0f, 0.0f, // top right
+        1.0f, 0.0f, 0.0f, // bottom right
+        0.0f, 0.0f, 0.0f, // bottom left
+        0.0f, 1.0f, 0.0f  // top left
     };
-    unsigned int indicesRock[] = {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
-    };  
+    unsigned int indicesRock[] = {
+        // note that we start from 0!
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
+    };
 
     unsigned int VBORock, VAORock, EBORock;
     glGenVertexArrays(1, &VAORock);
@@ -99,8 +101,8 @@ int main()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBORock);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicesRock), indicesRock, GL_STATIC_DRAW);
     // 4. then set the vertex attributes pointers
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0); 
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(0);
 
     // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
     // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
@@ -114,48 +116,47 @@ int main()
     glGenTextures(1, &texColorBuffer);
     glBindTexture(GL_TEXTURE_3D, texColorBuffer);
     glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB, 96, 96, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_3D, 0);
-    
-    for(int i = 0; i<256; i++){
-        // attach it to currently bound framebuffer object
-        glFramebufferTexture3D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_3D, texColorBuffer, 0, i);
-        if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-    
-        // render
-        // ------
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-    
-    
-        rockShader.use();
-        rockShader.setInt("yIndex",i);
-
-
-        glBindVertexArray(VAORock);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    }
-    
-    glBindVertexArray(0);
-
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);  
-    glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
 
     // build and compile our shader program
     // ------------------------------------
+
     Shader Shader("shader\\shader.vert", "shader\\shader.frag", "shader\\shader.geom"); // you can name your shader files however you like
+
+    //------------
+    // Test
+    //------------
+    //Shader Shader("shader\\shader.vert", "shader\\shader.frag"); // you can name your shader files however you
+    //------------
+    //------------
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
     float vertices[] = {
-        0.0f,  0.0f, 0.0f,
-        0.25f,  5.0f, 0.0f,
-        0.5f,  -5.0f, 0.0f,
-        0.75f,  0.0f, 10.0f,
-    }; 
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+        0.0f,
+        0.0f,
+        1.f,
+        1.0f,
+        0.0f,
+        1.0f,
+        1.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+        0.0f,
+    };
 
     unsigned int VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -168,14 +169,21 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     // 4. then set the vertex attributes pointers
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0); 
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(0);
 
     // render loop
     // -----------
-    int zIndex=0;
+
+    //------------
+    // Test
+    //------------
+    //int zIndex=0;
+    //------------
+    //------------
+
     while (!glfwWindowShouldClose(window))
-    { 
+    {
         // per-frame time logic
         // --------------------
         float currentFrame = glfwGetTime();
@@ -184,18 +192,22 @@ int main()
         // input
         // -----
         processInput(window);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        generateRocks(offset, framebuffer, VAORock, texColorBuffer, rockShader);
 
+        if (wireframe)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
         // render
         // ------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-
-        
         // render the triangle
         Shader.use();
 
         // pass projection matrix to shader (note that in this case it could change every frame)
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)scr_width / (float)scr_height, 0.1f, 100.0f);
         Shader.setMat4("projection", projection);
 
         // camera/view transformation
@@ -204,16 +216,34 @@ int main()
 
         // calculate the model matrix for each object and pass it to shader before drawing
         glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        model = glm::scale(model, glm::vec3(0.1f,0.1f,0.1f));
+        model = glm::rotate(model, 1.57f, glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
         Shader.setMat4("model", model);
 
         Shader.setInt("screenTexture", 0);
-        //Shader.setFloat("zIndex", (zIndex/10));
-        ++zIndex;
-        zIndex%=(256*10);
+
+        //------------
+        // Test
+        //------------
+        //Shader.setFloat("zIndex", (zIndex/255.0f));
+        //std::cout<<"Z: "<<zIndex<<std::endl;
+        //++zIndex;
+        //zIndex%=(256);
+        //------------
+        //------------
+
         glBindVertexArray(VAO);
         glBindTexture(GL_TEXTURE_3D, texColorBuffer);
-        glDrawArrays(GL_POINTS, 0, 96*96*256 );
+        glDrawArrays(GL_POINTS, 0, 96 * 96 * 256);
+
+        //------------
+        // Test
+        //------------
+        //glDrawArrays(GL_TRIANGLES, 0, 6);
+        //------------
+        //------------
+
         glBindVertexArray(0);
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -231,19 +261,53 @@ int main()
     glfwTerminate();
     return 0;
 }
+void generateRocks(float offset, unsigned int framebuffer, unsigned int VAORock, unsigned int texColorBuffer, Shader rockShader)
+{
+    glViewport(0, 0, 96, 96);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+    glBindTexture(GL_TEXTURE_3D, texColorBuffer);
+    glBindVertexArray(VAORock);
+    rockShader.use();
+    for (int i = 0; i < 256; i++)
+    {
+        // attach it to currently bound framebuffer object
+        glFramebufferTexture3D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_3D, texColorBuffer, 0, i);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+            std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
 
+        // render
+        // ------
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        float yIndex = i + offset * 20;
+        rockShader.setFloat("yIndex", yIndex);
+
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+
+    glBindVertexArray(0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_3D, 0);
+    glViewport(0, 0, scr_width, scr_height);
+}
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window)
 {
+    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+        wireframe = !wireframe;
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
-
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.ProcessKeyboard(FORWARD, deltaTime);
+    {
+        offset += deltaTime;
+        //camera.ProcessKeyboard(FORWARD, deltaTime);
+    }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.ProcessKeyboard(BACKWARD, deltaTime);
+    {
+        offset -= deltaTime;
+        //camera.ProcessKeyboard(BACKWARD, deltaTime);
+    }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
@@ -253,7 +317,7 @@ void processInput(GLFWwindow *window)
 
 // glfw: whenever the mouse moves, this callback is called
 // -------------------------------------------------------
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+void mouse_callback(GLFWwindow *window, double xpos, double ypos)
 {
     if (firstMouse)
     {
@@ -273,16 +337,18 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 // ----------------------------------------------------------------------
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(yoffset);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
-    // make sure the viewport matches the new window dimensions; note that width and 
+    scr_width = width;
+    scr_height = height;
+    // make sure the viewport matches the new window dimensions; note that width and
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
