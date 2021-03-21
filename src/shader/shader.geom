@@ -5,18 +5,26 @@ layout (triangle_strip, max_vertices = 12) out;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform sampler3D screenTexture;
+
+uniform sampler3D rockTexture;
 
 out vec3 fColor;
 
-
-vec3 vectors[] = vec3[](
+vec3 grid[]=vec3[](
+    vec3(0.0f,1.0f,1.0f),
+    vec3(1.0f,1.0f,1.0f),
+    vec3(1.0f,1.0f,0.0f),
+    vec3(0.0f,1.0f,0.0f),
+    vec3(0.0f,0.0f,1.0f),
+    vec3(1.0f,0.0f,1.0f),
+    vec3(1.0f,0.0f,0.0f),
+    vec3(0.0f,0.0f,0.0f));
+vec3 edges[] = vec3[](
     vec3(0.0, 0.0, 0.0), vec3(0.5, 1.0, 1.0), vec3(0.0, 0.5, 1.0), 
     vec3(0.0, 1.0, 0.5), vec3(1.0, 0.5, 1.0), vec3(1.0, 1.0, 0.5),
     vec3(0.5, 1.0, 0.0), vec3(1.0, 0.5, 0.0), vec3(0.0, 0.5, 0.0), 
     vec3(0.0, 0.0, 0.5), vec3(0.5, 0.0, 1.0), vec3(1.0, 0.0, 0.5),
     vec3(0.5, 0.0, 0.0));
-
 int table[3072] = int[] (
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  4,  1,  5,  0,  0,  0,  0,  0,  0,  0,  0,  0,  3,  5,
@@ -181,45 +189,17 @@ int table[3072] = int[] (
     0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  0,  0,  0,  0,  0,  0,  0,  0,
     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0);
 
-
-
-
-
-
-
-
-//--------------------
-vec3 cube[]=vec3[](
-    vec3(0.0f,1.0f,1.0f),
-    vec3(1.0f,1.0f,1.0f),
-    vec3(1.0f,1.0f,0.0f),
-    vec3(0.0f,1.0f,0.0f),
-    vec3(0.0f,0.0f,1.0f),
-    vec3(1.0f,0.0f,1.0f),
-    vec3(1.0f,0.0f,0.0f),
-    vec3(0.0f,0.0f,0.0f));
-//--------------------
-
 float sampleDensity(vec3 point){
-    
     point.x/=95.0f;
     point.y/=95.0f;
     point.z/=255.0f;
-    return texture(screenTexture, point).r;
-
-    //if(abs(distance(point, vec3(20.0)))<10.0f){
-    //    return 1;
-    //}
-    
-    //return 0;
+    return texture(rockTexture, point).r;
     }
 
-
 void main() {   
-   
     int cubeIndex = 0;
     for(int i = 0; i<8; i++){
-        float density = sampleDensity(gl_in[0].gl_Position.xyz+cube[i]);
+        float density = sampleDensity(gl_in[0].gl_Position.xyz+grid[i]);
         if(density>0.0f){
             cubeIndex|=1<<i;
         }
@@ -230,7 +210,7 @@ void main() {
     int index = cubeIndex * 12;
     for(int i = 0; i < 12; i += 3) {
         for(int k = 0; k < 3; k++) {
-            gl_Position = projection * view *  model * (base + vec4(vectors[table[index + i + k]], 0.0));
+            gl_Position = projection * view *  model * (base + vec4(edges[table[index + i + k]], 0.0));
             EmitVertex();
         }
         EndPrimitive();

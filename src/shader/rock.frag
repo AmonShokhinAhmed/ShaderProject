@@ -13,7 +13,6 @@ vec2 pillars[]= vec2[](
 
 //from: https://stackoverflow.com/a/28095165
 const float PHI = 1.61803398874989484820459; // Φ = Golden Ratio 
-
 float gold_noise(in vec2 xy, in float seed)
 {
     return fract(tan(distance(xy*PHI, xy)*seed)*xy.x);
@@ -35,13 +34,6 @@ void main()
     
     f-=2*gold_noise(fPos.xz,fPos.y);
     FragColor = vec4(f,f,f, 1.0f);
-
-    //if(distance(fPos, vec3(0.5f,0.5f,0.5f))<0.5)
-    //{
-    //    FragColor = vec4(1.0f,1.0f,1.0f,1.0f);
-    //}else{
-    //    FragColor = vec4(0.0f,0.0f,0.0f,1.0f);
-    //}
 }
 
 
